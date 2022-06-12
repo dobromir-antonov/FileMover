@@ -10,8 +10,9 @@ static class ServiceCollectionExtensions
     public static IServiceCollection RegisterServices(this IServiceCollection services) =>
         services
             .AddSingleton<ConsoleService>()
-            .AddSingleton<IFileMovementQueue, FileMovementQueue>()
-            .AddHostedService<BackgroundFileService>();
+            //.AddSingleton<FileMovementQueue>();
+            .AddSingleton<IFileMovementQueue, FileMovementQueue>();
+    //.AddHostedService<BackgroundFileService>();
 
     public static IServiceCollection RegisterLogger(this IServiceCollection services, IConfiguration configuration) =>
        services.AddLogging(config =>

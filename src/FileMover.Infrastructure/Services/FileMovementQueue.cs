@@ -1,90 +1,64 @@
-﻿using FileMover.Domain.Files;
+﻿using FileMover.Domain.Commands;
+using FileMover.Domain.Files;
+using FileMover.Infrastructure.Services;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
 
 namespace FileMover.Infrasturcutre.Services;
 
 public class FileMovementQueue : IFileMovementQueue
 {
-    private readonly ConcurrentDictionary<string, ConcurrentQueue<FileMovement>> _fileMovementGroups;
+    private readonly Dictionary<string, ChannelQueue> _queues = new();
     private readonly ILogger<FileMovementQueue> _logger;
-    private readonly int _maxDegreeOfParallelism;
 
     public FileMovementQueue(ILogger<FileMovementQueue> logger)
     {
-        _fileMovementGroups = new();
         _logger = logger;
-        _maxDegreeOfParallelism = Environment.ProcessorCount / 2;
     }
 
 
-    public void EnqueueFilesToMove(string srcFolder, string destFolder)
+    public async Task EnqueueAsync(MoveCommand cmd, CancellationToken cancellationToken)
     {
-        var fileGroups = Directory
-            .GetFiles(srcFolder)
+        var filesByType = Directory
+            .GetFiles(cmd.SrcFolder)
             .Select(filePath => new FileInfo(filePath))
             .GroupBy(file => file.Extension)
-            .Select(grp => new FileMovementGroup(
-                name: grp.Key, 
-                files: grp
-                    .Select(file => new FileMovement(
-                        src: file.FullName, 
-                        dest: $"{destFolder}/{file.Name}"))
-                    .ToList())
-            );
+            .Select(grp => new
+            {
+                FileType = grp.Key,
+                Files = grp.Select(f => new FileMovement(f.FullName, $"{cmd.DestFolder}/{f.Name}", f.Name))
+            });
 
-        foreach (var group in fileGroups) 
+        foreach (var grp in filesByType)
         {
-            EnqueueFilesToMove(group.Name, group.Files);
+            await EnqueueFilesByTypeAsync(grp.FileType, grp.Files, cancellationToken);
         }
     }
 
-    public async Task ProcessAllQueuedFilesAsync(CancellationToken cancellationToken)
+    private async Task EnqueueFilesByTypeAsync(string fileType, IEnumerable<FileMovement> files, CancellationToken cancellationToken)
     {
-        var parallelOptions = new ParallelOptions
+        if (!_queues.TryGetValue(fileType, out var queue))
         {
-            MaxDegreeOfParallelism = _maxDegreeOfParallelism,
-            CancellationToken = cancellationToken
-        };
+            queue = new ChannelQueue(cancellationToken);
+            _queues.TryAdd(fileType, queue);
+        }
 
-        await Parallel.ForEachAsync(_fileMovementGroups.Keys, parallelOptions, async (group, cancellationToken) =>
+        foreach (var file in files)
         {
-            if (_fileMovementGroups.TryGetValue(group, out var queue))
-            {
-                _logger.LogInformation("Files Count {Count} in Files Group {Group}", queue.Count, group);
-
-
-                while (queue.TryDequeue(out var fileMovement))
-                {
-                    try
-                    {
-                        _logger.LogInformation("Move file from '{Src}' to '{Dest} on threadId {ThreadId}'", fileMovement.Src, fileMovement.Dest, Environment.CurrentManagedThreadId);
-                        await FileHelper.MoveAsync(fileMovement.Src, fileMovement.Dest, cancellationToken: cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "'{Src}' file was not moved!", fileMovement.Src);
-                    }
-                }
-            }
-        });
+            await queue.EnqueueAsync(() => MoveFileAsync(file, cancellationToken));
+        }
     }
 
-
-    private void EnqueueFilesToMove(string groupName, List<FileMovement> fileMovements)
+    private async Task MoveFileAsync(FileMovement file, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Enqueue Files: {Files}", string.Join(", ", fileMovements.Select(x => x.Src)));
-
-        _fileMovementGroups.AddOrUpdate(
-            key: groupName,
-            addValue: new(fileMovements),
-            updateValueFactory: (key, queue) =>
-            {
-                foreach (var file in fileMovements)
-                    queue.Enqueue(file);
-
-                return queue;
-            }
-        );
+        try
+        {
+            _logger.LogInformation("file: {file}, Thread: {thread}", file.FileName, Environment.CurrentManagedThreadId);
+            await FileHelper.MoveFileAsync(file.Src, file.Dest, cancellationToken: cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex.Message);
+        }
     }
+
 }

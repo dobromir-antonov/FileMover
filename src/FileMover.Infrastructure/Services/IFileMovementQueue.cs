@@ -1,6 +1,7 @@
-﻿namespace FileMover.Infrasturcutre.Services;
+﻿using FileMover.Domain.Commands;
+
+namespace FileMover.Infrasturcutre.Services;
 public interface IFileMovementQueue
 {
-    void EnqueueFilesToMove(string srcFolder, string destFolder);
-    Task ProcessAllQueuedFilesAsync(CancellationToken cancellationToken);
+    Task EnqueueAsync(MoveCommand cmd, CancellationToken cancellationToken);
 }

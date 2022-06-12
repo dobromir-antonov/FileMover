@@ -22,16 +22,16 @@ public class ConsoleService
 
     public void StartUserInputMonitoring()
     {
-        Task.Run(() => StartUserInputLoop());
+        Task.Run(async () => await StartUserInputLoopAsync(_cancellationToken), _cancellationToken);
     }
 
 
-    private void StartUserInputLoop()
+    private async Task StartUserInputLoopAsync(CancellationToken cancellationToken)
     {
         ICommand? command;
-        bool stop = false;
+        bool exit = false;
 
-        while (!_cancellationToken.IsCancellationRequested && !stop)
+        while (!cancellationToken.IsCancellationRequested && !exit)
         {
             Console.Write("Please, enter a command:");
 
@@ -41,11 +41,11 @@ public class ConsoleService
             switch (command)
             {
                 case MoveCommand cmd:
-                    ProcessMoveCommand(cmd);
+                    await ProcessMoveCommandAsync(cmd, cancellationToken);
                     break;
 
                 case ExitCommand:
-                    stop = true;
+                    exit = true;
                     Console.WriteLine("Exit");
                     break;
 
@@ -57,7 +57,7 @@ public class ConsoleService
     }
 
 
-    private void ProcessMoveCommand(MoveCommand moveCommand)
+    private async Task ProcessMoveCommandAsync(MoveCommand moveCommand, CancellationToken cancellationToken)
     {
         try
         {
@@ -73,7 +73,7 @@ public class ConsoleService
             if (!Directory.Exists(moveCommand.DestFolder))
                 throw new ArgumentException("Destination folder does not exist!");
 
-            _fileQueue.EnqueueFilesToMove(moveCommand.SrcFolder, moveCommand.DestFolder);
+           await _fileQueue.EnqueueAsync(moveCommand, cancellationToken);
 
         }
         catch (Exception ex)
