@@ -2,7 +2,7 @@
 
 namespace FileMover.Infrastructure.Services;
 
-public class ChannelQueue
+public class ChannelQueue : IQueue
 {
     private readonly ChannelWriter<Func<Task>> _writer;
     private readonly ChannelReader<Func<Task>> _reader;
@@ -22,7 +22,7 @@ public class ChannelQueue
         Task.Run(ReadMessagesAsync, cancellationToken);
     }
 
-    public async ValueTask EnqueueAsync(Func<Task> function)
+    public async Task EnqueueAsync(Func<Task> function)
     {
         await _writer.WriteAsync(function, _cancellationToken);
     }

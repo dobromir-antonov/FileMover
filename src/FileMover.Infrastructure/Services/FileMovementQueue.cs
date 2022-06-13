@@ -7,7 +7,7 @@ namespace FileMover.Infrasturcutre.Services;
 
 public class FileMovementQueue : IFileMovementQueue
 {
-    private readonly Dictionary<string, ChannelQueue> _queues = new();
+    private readonly Dictionary<string, IQueue> _queues = new();
     private readonly ILogger<FileMovementQueue> _logger;
 
     public FileMovementQueue(ILogger<FileMovementQueue> logger)
@@ -38,7 +38,7 @@ public class FileMovementQueue : IFileMovementQueue
     {
         if (!_queues.TryGetValue(fileType, out var queue))
         {
-            queue = new ChannelQueue(cancellationToken);
+            queue = new BlockQueue(cancellationToken);
             _queues.TryAdd(fileType, queue);
         }
 
@@ -52,12 +52,12 @@ public class FileMovementQueue : IFileMovementQueue
     {
         try
         {
-            _logger.LogInformation("file: {file}, Thread: {thread}", file.FileName, Environment.CurrentManagedThreadId);
+            _logger.LogInformation("move {file}, thread: {thread}", file.FileName, Environment.CurrentManagedThreadId);
             await FileHelper.MoveFileAsync(file.Src, file.Dest, cancellationToken: cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex.Message);
+            _logger.LogError("While moving file {file}, an error has occurred. {error}", file.FileName, ex.Message);
         }
     }
 
