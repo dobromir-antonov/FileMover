@@ -7,12 +7,12 @@ FileMover provides functionality to move files from one folder to another in par
 - files in each group are processed sequentially.
 
 # Running
-Load solution and run FileMover.App project
+run FileMover.App project
 
 # Commands
 - move -s '{srcPath}' -d '{destPath}' 
-{srcPath} - source folder - ./src, c:/temp/src ... etc
-{destPath} - source dest - ./dest, c:/temp/dest ... etc
+  {srcPath} - source folder - ./src, c:/temp/src ... etc
+  {destPath} - source dest - ./dest, c:/temp/dest ... etc
   
 - exit
 
