@@ -13,9 +13,9 @@ public class BlockQueue : IQueue
         _queue = CreateQueue();
     }
 
-    public Task EnqueueAsync(Func<Task> job)
+    public void Enqueue(Func<Task> job)
     {
-        return _queue.SendAsync(job, _cancellationToken);
+        _queue.Post(job);
     }
 
     public void Stop()
@@ -25,6 +25,6 @@ public class BlockQueue : IQueue
 
     private ActionBlock<Func<Task>> CreateQueue()
     {
-        return new ActionBlock<Func<Task>>((job) => job.Invoke());
+        return new ActionBlock<Func<Task>>(job => job.Invoke());
     }
 }

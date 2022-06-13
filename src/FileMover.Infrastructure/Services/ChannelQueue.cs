@@ -22,9 +22,9 @@ public class ChannelQueue : IQueue
         Task.Run(ReadMessagesAsync, cancellationToken);
     }
 
-    public async Task EnqueueAsync(Func<Task> function)
+    public void Enqueue(Func<Task> job)
     {
-        await _writer.WriteAsync(function, _cancellationToken);
+        _writer.TryWrite(job);
     }
 
     public void Stop()

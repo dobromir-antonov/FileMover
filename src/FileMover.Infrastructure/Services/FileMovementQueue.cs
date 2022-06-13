@@ -7,16 +7,17 @@ namespace FileMover.Infrasturcutre.Services;
 
 public class FileMovementQueue : IFileMovementQueue
 {
-    private readonly Dictionary<string, IQueue> _queues = new();
+    private readonly Dictionary<string, IQueue> _queues;
     private readonly ILogger<FileMovementQueue> _logger;
 
     public FileMovementQueue(ILogger<FileMovementQueue> logger)
     {
+        _queues = new();
         _logger = logger;
     }
 
 
-    public async Task EnqueueAsync(MoveCommand cmd, CancellationToken cancellationToken)
+    public void Enqueue(MoveCommand cmd, CancellationToken cancellationToken)
     {
         var filesByType = Directory
             .GetFiles(cmd.SrcFolder)
@@ -30,11 +31,11 @@ public class FileMovementQueue : IFileMovementQueue
 
         foreach (var grp in filesByType)
         {
-            await EnqueueFilesByTypeAsync(grp.FileType, grp.Files, cancellationToken);
+            EnqueueFilesByType(grp.FileType, grp.Files, cancellationToken);
         }
     }
 
-    private async Task EnqueueFilesByTypeAsync(string fileType, IEnumerable<FileMovement> files, CancellationToken cancellationToken)
+    private void EnqueueFilesByType(string fileType, IEnumerable<FileMovement> files, CancellationToken cancellationToken)
     {
         if (!_queues.TryGetValue(fileType, out var queue))
         {
@@ -44,7 +45,7 @@ public class FileMovementQueue : IFileMovementQueue
 
         foreach (var file in files)
         {
-            await queue.EnqueueAsync(() => MoveFileAsync(file, cancellationToken));
+            queue.Enqueue(() => MoveFileAsync(file, cancellationToken));
         }
     }
 

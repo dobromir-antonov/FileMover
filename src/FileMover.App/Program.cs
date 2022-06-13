@@ -15,7 +15,7 @@ using var host = Host.CreateDefaultBuilder(args)
     )
     .Build(); 
 
-var console = host.Services.GetRequiredService<ConsoleService>()!;
+var console = host.Services.GetRequiredService<IConsoleService>()!;
 console.StartUserInputMonitoring();
 
 await host.RunAsync();

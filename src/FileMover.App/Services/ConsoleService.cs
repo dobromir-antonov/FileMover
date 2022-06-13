@@ -5,7 +5,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace FileMover.Services;
 
-public class ConsoleService
+public class ConsoleService : IConsoleService
 {
     private readonly IFileMovementQueue _fileQueue;
     private readonly CancellationToken _cancellationToken;
@@ -22,16 +22,16 @@ public class ConsoleService
 
     public void StartUserInputMonitoring()
     {
-        Task.Run(async () => await StartUserInputLoopAsync(_cancellationToken), _cancellationToken);
+        Task.Run(() => StartUserInputLoop(), _cancellationToken);
     }
 
 
-    private async Task StartUserInputLoopAsync(CancellationToken cancellationToken)
+    private void StartUserInputLoop()
     {
         ICommand? command;
         bool exit = false;
 
-        while (!cancellationToken.IsCancellationRequested && !exit)
+        while (!_cancellationToken.IsCancellationRequested && !exit)
         {
             Console.Write("Please, enter a command:");
 
@@ -40,8 +40,8 @@ public class ConsoleService
 
             switch (command)
             {
-                case MoveCommand cmd:
-                    await ProcessMoveCommandAsync(cmd, cancellationToken);
+                case MoveCommand cmd: 
+                    ProcessMoveCommand(cmd); 
                     break;
 
                 case ExitCommand:
@@ -57,7 +57,7 @@ public class ConsoleService
     }
 
 
-    private async Task ProcessMoveCommandAsync(MoveCommand moveCommand, CancellationToken cancellationToken)
+    public void ProcessMoveCommand(MoveCommand moveCommand)
     {
         try
         {
@@ -73,7 +73,7 @@ public class ConsoleService
             if (!Directory.Exists(moveCommand.DestFolder))
                 throw new ArgumentException("Destination folder does not exist!");
 
-           await _fileQueue.EnqueueAsync(moveCommand, cancellationToken);
+            _fileQueue.Enqueue(moveCommand, _cancellationToken);
 
         }
         catch (Exception ex)

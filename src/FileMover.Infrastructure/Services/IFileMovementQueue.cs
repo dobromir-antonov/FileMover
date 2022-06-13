@@ -3,5 +3,5 @@
 namespace FileMover.Infrasturcutre.Services;
 public interface IFileMovementQueue
 {
-    Task EnqueueAsync(MoveCommand cmd, CancellationToken cancellationToken);
+    void Enqueue(MoveCommand cmd, CancellationToken cancellationToken);
 }

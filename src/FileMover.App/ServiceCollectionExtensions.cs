@@ -5,14 +5,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
-static class ServiceCollectionExtensions
+public static class ServiceCollectionExtensions
 {
     public static IServiceCollection RegisterServices(this IServiceCollection services) =>
         services
-            .AddSingleton<ConsoleService>()
-            //.AddSingleton<FileMovementQueue>();
+            .AddSingleton<IConsoleService, ConsoleService>()
             .AddSingleton<IFileMovementQueue, FileMovementQueue>();
-    //.AddHostedService<BackgroundFileService>();
 
     public static IServiceCollection RegisterLogger(this IServiceCollection services, IConfiguration configuration) =>
        services.AddLogging(config =>
