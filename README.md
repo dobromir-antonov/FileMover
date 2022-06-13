@@ -11,8 +11,8 @@ Load solution and run FileMover.App project
 
 # Commands
 - move -s '{srcPath}' -d '{destPath}' 
-  {srcPath} - source folder - ./src, c:/temp/src ... etc
-  {destPath} - source dest - ./dest, c:/temp/dest ... etc
+{srcPath} - source folder - ./src, c:/temp/src ... etc
+{destPath} - source dest - ./dest, c:/temp/dest ... etc
   
 - exit
 
